@@ -7,26 +7,9 @@ const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
 const path = require('path');
 
-const authRoutes = require('./routes/authRoutes');
-const paymentRoutes = require('./routes/paymentRoutes');
-const userRoutes = require('./routes/userRoutes');
-const adminRoutes = require('./routes/adminRoutes');
-
-console.log('App starting. Environment:', process.env.NODE_ENV);
-console.log('DB_HOST configured:', !!process.env.DB_HOST);
-console.log('JWT_SECRET configured:', !!process.env.JWT_SECRET);
-
-// Safety fallback for JWT_SECRET to avoid crashing before env vars are set
-process.env.JWT_SECRET = process.env.JWT_SECRET || 'temp_secret_for_booting_on_vercel_please_set_real_one';
-
-// Initialize Cron Jobs (only if not on Vercel)
-if (!process.env.VERCEL) {
-    require('./cron/dailyEarnings');
-}
-
 const app = express();
 
-// Health check / Homepage (at the top to ensure it loads even if routes fail)
+// Health check / Homepage (at the very top)
 app.get('/', (req, res) => {
     res.status(200).send(`
         <!DOCTYPE html>
@@ -62,7 +45,7 @@ app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Routes - Loaded after homepage to improve boot success
+// Routes loaded INSIDE a try-catch to prevent total crash
 try {
     const authRoutes = require('./routes/authRoutes');
     const paymentRoutes = require('./routes/paymentRoutes');
@@ -74,37 +57,32 @@ try {
     app.use('/api/user', userRoutes);
     app.use('/api/admin', adminRoutes);
 
-    const swaggerDocument = YAML.load(path.join(__dirname, 'swagger.yaml'));
+    const swaggerPath = path.join(__dirname, 'swagger.yaml');
+    const swaggerDocument = YAML.load(swaggerPath);
     app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 } catch (err) {
-    console.error('Error loading routes or swagger:', err);
+    console.error('CRITICAL: Failed to load routes:', err.message);
 }
 
-const apiLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 15000 });
+// Global API rate limit
+const apiLimiter = rateLimit({ 
+    windowMs: 15 * 60 * 1000, 
+    max: 15000,
+    message: { error: 'Too many requests' }
+});
 app.use('/api/', apiLimiter);
 
 // Error Handling
 app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({ error: 'Internal Server Error' });
-});
-
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/payments', paymentRoutes);
-app.use('/api/user', userRoutes);
-app.use('/api/admin', adminRoutes);
-
-// Error Handling Middleware
-app.use((err, req, res, next) => {
-    console.error(err.stack);
+    console.error('Unhandled Error:', err);
     res.status(500).json({ error: 'Internal Server Error' });
 });
 
 const PORT = process.env.PORT || 3000;
-if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+// Only listen if NOT on Vercel
+if (!process.env.VERCEL) {
     app.listen(PORT, () => {
-        console.log(`Server is running on port ${PORT}`);
+        console.log(`Server is running locally on port ${PORT}`);
     });
 }
 
