@@ -12,8 +12,10 @@ const paymentRoutes = require('./routes/paymentRoutes');
 const userRoutes = require('./routes/userRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 
-// Initialize Cron Jobs
-require('./cron/dailyEarnings');
+// Initialize Cron Jobs (only if not on Vercel)
+if (!process.env.VERCEL) {
+    require('./cron/dailyEarnings');
+}
 
 const app = express();
 
