@@ -15,18 +15,4 @@ const pool = new Pool({
     connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
 });
 
-// Helper check function to verify connection
-pool.connect((err, client, release) => {
-    if (err) {
-        return console.error('Error acquiring client', err.stack);
-    }
-    client.query('SELECT NOW()', (err, result) => {
-        release();
-        if (err) {
-            return console.error('Error executing query', err.stack);
-        }
-        console.log('PostgreSQL Connected Successfully at:', result.rows[0].now);
-    });
-});
-
 module.exports = pool;

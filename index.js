@@ -19,39 +19,45 @@ if (!process.env.VERCEL) {
 
 const app = express();
 
+// Required for express-rate-limit to work correctly on Vercel
+app.set('trust proxy', 1);
+
 // Security Middlewares
-app.use(helmet());
+app.use(helmet({
+    contentSecurityPolicy: false // Disable CSP for swagger-ui issues on some environments
+}));
 
 // Configure CORS
 const corsOptions = {
-    origin: function (origin, callback) {
-        // Permitimos cualquier origen (localhost, production domain, etc.) para evitar 'Failed to fetch'
-        callback(null, true);
-    },
+    origin: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
 };
 app.use(cors(corsOptions));
 
-// Stripe Webhook needs the raw body format, so we exclude it from express.json parser
+// Stripe Webhook needs the raw body format
 app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 
 // JSON parsing for everything else
 app.use(express.json());
 
-// Serve static files (like images) explicitly
+// Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Swagger Documentation setup
-const swaggerDocument = YAML.load(path.join(__dirname, 'swagger.yaml'));
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+try {
+    const swaggerDocument = YAML.load(path.join(__dirname, 'swagger.yaml'));
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+} catch (err) {
+    console.error('Failed to load swagger.yaml:', err);
+}
 
-// Rate Limiting designed for high-concurrency 
+// Rate Limiting
 const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 15000, // Augmented limit to allow intense load testing (5000+ users simulated)
-    message: 'Too many requests from this IP, please try again later.',
+    windowMs: 15 * 60 * 1000,
+    max: 15000,
+    message: 'Too many requests.',
 });
 app.use('/api/', apiLimiter);
 
@@ -68,7 +74,7 @@ app.get('/', (req, res) => {
                 body {
                     margin: 0;
                     padding: 0;
-                    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
                     background-color: #0b0f19;
                     color: #fff;
                     display: flex;
@@ -78,11 +84,12 @@ app.get('/', (req, res) => {
                     height: 100vh;
                     text-align: center;
                 }
-                .logo {
-                    width: 120px;
-                    height: auto;
+                .logo-text {
+                    font-size: 3rem;
+                    font-weight: 800;
+                    letter-spacing: 2px;
                     margin-bottom: 2rem;
-                    animation: float 3s ease-in-out infinite;
+                    color: #fff;
                 }
                 h1 {
                     font-size: 2.5rem;
@@ -107,9 +114,7 @@ app.get('/', (req, res) => {
                     background-color: #2dd4bf;
                     border-radius: 50%;
                     box-shadow: 0 0 10px #2dd4bf;
-                    animation: pulse 2s infinite;
                 }
-                .version { margin-top: 5px; color: #9ca3af; font-size: 0.9rem; }
                 .btn {
                     display: inline-block;
                     background-color: #2dd4bf;
@@ -118,36 +123,17 @@ app.get('/', (req, res) => {
                     border-radius: 8px;
                     text-decoration: none;
                     font-weight: bold;
-                    transition: all 0.3s ease;
-                }
-                .btn:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 5px 15px rgba(45, 212, 191, 0.3);
-                }
-                @keyframes float {
-                    0% { transform: translateY(0px); }
-                    50% { transform: translateY(-10px); }
-                    100% { transform: translateY(0px); }
-                }
-                @keyframes pulse {
-                    0% { opacity: 1; }
-                    50% { opacity: 0.5; }
-                    100% { opacity: 1; }
                 }
             </style>
         </head>
         <body>
-            <img src="/images/equaly-logo.png" alt="EQUALY Logo" class="logo">
-            <h1>EQUALY API Services</h1>
-            
+            <div class="logo-text">EQUALY</div>
+            <h1>API Services</h1>
             <div class="status-box">
                 <div class="status-dot"></div>
                 <span>Server is Online & Secure</span>
             </div>
-            
-            <p class="version">Version 1.0.0</p>
-            <br>
-            <a href="/api-docs" class="btn">View API Documentation</a>
+            <a href="/api-docs" class="btn">Explorar documentación</a>
         </body>
         </html>
     `);
