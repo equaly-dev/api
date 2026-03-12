@@ -1,0 +1,9 @@
+node_modules
+.env
+Archivo.zip
+.DS_Store
+testdb.js
+migrate_supabase.js
+migrate_006.js
+migrate_007.js
+migrate_008.js

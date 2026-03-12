@@ -1,0 +1,292 @@
+openapi: 3.0.0
+info:
+  title: EQUALY API
+  description: API for EQUALY platform authentication and services.
+  version: 1.0.0
+servers:
+  - url: /api
+    description: Base path
+paths:
+  /auth/register:
+    post:
+      summary: Register a new user
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - password
+                - country
+                - terms_accepted
+              properties:
+                name:
+                  type: string
+                  example: "Pedro Perez"
+                email:
+                  type: string
+                  format: email
+                  example: "pedro.perez@example.com"
+                password:
+                  type: string
+                  format: password
+                  example: "securePassword123"
+                country:
+                  type: string
+                  example: "CO"
+                terms_accepted:
+                  type: boolean
+                  example: true
+      responses:
+        '201':
+          description: User registered successfully
+        '400':
+          description: Validation error
+        '409':
+          description: Email already in use
+        '500':
+          description: Server error
+
+  /auth/login:
+    post:
+      summary: Login an existing user
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "pedro.perez@example.com"
+                password:
+                  type: string
+                  format: password
+                  example: "securePassword123"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  token:
+                    type: string
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                      email:
+                        type: string
+        '400':
+          description: Validation error
+        '401':
+          description: Invalid email or password
+        '500':
+          description: Server error
+
+  /payments/create-checkout-session:
+    post:
+      summary: Crear una sesión de checkout en Stripe
+      tags:
+        - Pasarela de Pago
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - planId
+                - amount
+              properties:
+                planId:
+                  type: string
+                  example: "bronze"
+                  enum: [bronze, silver, gold, usd, eur, btc]
+                  description: Identificador del plan a adquirir
+                amount:
+                  type: number
+                  example: 1000
+                  description: Monto numérico de la inversión en USD
+                localCurrencyCode:
+                  type: string
+                  example: "COP"
+                exchangeRate:
+                  type: number
+                  example: 4000
+                cryptoPriceUsd:
+                  type: number
+                  example: 65000
+      responses:
+        '200':
+          description: OK - Sesión de pago generada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    format: uri
+                    description: URL de redirección segura a Stripe
+        '400':
+          description: Error de validación (El plan no existe)
+        '401':
+          description: No autorizado (Falta JWT)
+        '500':
+          description: Error en el servidor al originar el checkout
+
+  /user/plans:
+    get:
+      summary: Obtener los planes de inversión activos del usuario
+      tags:
+        - Usuario
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK - Planes obtenidos con éxito
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  plans:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        user_plan_id:
+                          type: integer
+                          example: 1
+                        plan_name:
+                          type: string
+                          example: "oro"
+                        amount_invested:
+                          type: string
+                          example: "200.00"
+                        status:
+                          type: string
+                          example: "active"
+                        purchase_date:
+                          type: string
+                          format: date-time
+                          example: "2026-02-28T00:00:00.000Z"
+                        daily_percentage:
+                          type: string
+                          example: "0.36563071298"
+                        total_earned:
+                          type: string
+                          example: "7.3130"
+        '401':
+          description: No autorizado (Token inválido o expirado)
+        '404':
+          description: Usuario no encontrado
+        '500':
+          description: Error interno del servidor
+
+  /user/profile:
+    get:
+      summary: Obtener perfil del usuario (incluye link de referido)
+      tags: [Usuario]
+      security: [{bearerAuth: []}]
+      responses: { '200': { description: OK } }
+
+  /user/referrals:
+    get:
+      summary: Obtener lista de referidos del usuario
+      tags: [Usuario]
+      security: [{bearerAuth: []}]
+      responses: { '200': { description: OK } }
+
+  /user/divisas:
+    get:
+      summary: Obtener compras de divisas (USD/EUR) del usuario
+      tags: [Usuario]
+      security: [{bearerAuth: []}]
+      responses: { '200': { description: OK } }
+
+  /user/criptos:
+    get:
+      summary: Obtener compras de criptomonedas (BTC) del usuario
+      tags: [Usuario]
+      security: [{bearerAuth: []}]
+      responses: { '200': { description: OK } }
+
+  /user/portfolio-summary:
+    get:
+      summary: Obtener resumen total invertido del usuario (Planes + Divisas + Criptos)
+      tags: [Usuario]
+      security: [{bearerAuth: []}]
+      responses: { '200': { description: OK } }
+
+  /admin/register:
+    post:
+      summary: Registrar nuevo administrador
+      tags: [Administrador]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password]
+              properties:
+                name: { type: string }
+                email: { type: string }
+                password: { type: string }
+      responses: { '201': { description: OK } }
+
+  /admin/login:
+    post:
+      summary: Login de administrador
+      tags: [Administrador]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string }
+                password: { type: string }
+      responses: { '200': { description: OK } }
+
+  /admin/stats:
+    get:
+      summary: Obtener estadisticas generales para el dashboard administrador
+      tags: [Administrador]
+      security: [{bearerAuth: []}]
+      responses: { '200': { description: OK } }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
