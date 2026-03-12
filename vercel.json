@@ -1,3 +1,22 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.js" }]
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/api-docs",
+      "destination": "/index.js"
+    },
+    {
+      "source": "/api-docs/(.*)",
+      "destination": "/index.js"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.js"
+    }
+  ],
+  "functions": {
+    "index.js": {
+      "includeFiles": "swagger.yaml"
+    }
+  }
 }
