@@ -142,6 +142,12 @@ app.get('/', (req, res) => {
                     transform: translateY(-5px) scale(1.02);
                     box-shadow: 0 20px 40px -5px rgba(45, 212, 191, 0.6);
                 }
+                .logo-img {
+                    width: 140px;
+                    height: auto;
+                    margin-bottom: 1.5rem;
+                    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
+                }
                 .footer-info {
                     margin-top: 3rem;
                     display: flex;
@@ -165,6 +171,7 @@ app.get('/', (req, res) => {
             <div class="bg-glow"></div>
             <div class="bg-glow-2"></div>
             <div class="card">
+                <img src="/images/equaly-logo.png" alt="EQUALY Logo" class="logo-img">
                 <div class="logo-text">EQUALY</div>
                 <p class="tagline">Infraestructura Tecnológica para Activos Digitales</p>
                 <div class="status-container">
