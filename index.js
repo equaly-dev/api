@@ -12,6 +12,13 @@ const paymentRoutes = require('./routes/paymentRoutes');
 const userRoutes = require('./routes/userRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 
+console.log('App starting. Environment:', process.env.NODE_ENV);
+console.log('DB_HOST configured:', !!process.env.DB_HOST);
+console.log('JWT_SECRET configured:', !!process.env.JWT_SECRET);
+
+// Safety fallback for JWT_SECRET to avoid crashing before env vars are set
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'temp_secret_for_booting_on_vercel_please_set_real_one';
+
 // Initialize Cron Jobs (only if not on Vercel)
 if (!process.env.VERCEL) {
     require('./cron/dailyEarnings');
