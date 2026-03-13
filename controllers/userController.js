@@ -2,13 +2,7 @@ const pool = require('../config/db');
 
 exports.getUserPlans = async (req, res) => {
     try {
-        // En un caso real usaríamos req.user.id del token. Aquí buscamos al usuario dummy "demo@correo.com"
-        const users = await pool.query('SELECT id FROM users WHERE email = $1', ['demo@correo.com']);
-        if (users.rows.length === 0) {
-            return res.status(404).json({ success: false, error: 'User demo@correo.com not found' });
-        }
-
-        const userId = users.rows[0].id;
+        const userId = req.user.id;
 
         const plans = await pool.query(`
             SELECT 
@@ -16,16 +10,14 @@ exports.getUserPlans = async (req, res) => {
                 up.plan_name,
                 up.amount_invested,
                 up.status,
-                up.created_at as purchase_date,
-                sp.daily_percentage,
-                COALESCE(SUM(de.amount), 0) as total_earned
+                up.created_at as purchase_date
             FROM user_plans up
-            JOIN system_plans sp ON up.plan_name = sp.name
-            LEFT JOIN daily_earnings de ON up.id = de.user_plan_id
             WHERE up.user_id = $1
-            GROUP BY up.id, sp.daily_percentage
             ORDER BY up.created_at DESC
         `, [userId]);
+
+        // Note: For now we return basic info, daily_earnings can be added later as a subquery or separate call
+        // to prevent complex joins that might fail if tables are empty.
 
         res.json({ success: true, plans: plans.rows });
     } catch (error) {
