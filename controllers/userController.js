@@ -12,7 +12,10 @@ exports.getUserPlans = async (req, res) => {
                 up.status,
                 up.created_at as purchase_date,
                 COALESCE(sp.daily_percentage, 0) as daily_percentage,
-                COALESCE((SELECT SUM(amount) FROM daily_earnings WHERE user_plan_id = up.id), 0) as total_earned
+                (
+                    up.amount_invested * (COALESCE(sp.daily_percentage, 0) / 100) * 
+                    GREATEST(0, EXTRACT(DAY FROM (NOW() - up.created_at)))
+                ) as total_earned
             FROM user_plans up
             LEFT JOIN system_plans sp ON LOWER(up.plan_name) LIKE '%' || LOWER(sp.name) || '%'
             WHERE up.user_id = $1

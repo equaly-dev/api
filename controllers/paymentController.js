@@ -137,6 +137,20 @@ exports.webhook = async (req, res) => {
                         [transactions[0].user_id, PLANS[planId]?.name || planId, transactions[0].amount, 'active']
                     );
                 }
+
+                // --- Referral Commission Logic (5% for Vinculados) ---
+                const buyerId = transactions[0].user_id;
+                const buyerRes = await db.query('SELECT referred_by FROM users WHERE id = $1', [buyerId]);
+                const referrerId = buyerRes.rows[0]?.referred_by;
+
+                if (referrerId) {
+                    const commissionAmount = parseFloat(transactions[0].amount) * 0.05;
+                    await db.query(
+                        'INSERT INTO referral_commissions (referrer_id, referred_id, amount) VALUES ($1, $2, $3)',
+                        [referrerId, buyerId, commissionAmount]
+                    );
+                    console.log(`✅ Comisión del 5% (${commissionAmount}) otorgada al usuario ${referrerId} por la compra de ${buyerId}`);
+                }
             }
         } catch (dbError) {
             console.error('Database error on webhook handling:', dbError);
