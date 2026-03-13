@@ -8,7 +8,9 @@ const PLANS = {
     'gold': { name: 'Plan Oro' },
     'usd': { name: 'Divisa USD' },
     'eur': { name: 'Divisa EUR' },
-    'btc': { name: 'Bitcoin (BTC)' }
+    'btc': { name: 'Bitcoin (BTC)' },
+    'AAPL': { name: 'Apple Inc. (AAPL)' },
+    'TSLA': { name: 'Tesla Inc. (TSLA)' }
 };
 
 exports.createCheckoutSession = async (req, res) => {
@@ -121,6 +123,12 @@ exports.webhook = async (req, res) => {
                     await db.query(
                         'INSERT INTO user_cryptos (user_id, crypto_type, amount_usd_paid, crypto_amount_bought, purchase_price_usd, local_currency_code) VALUES ($1, $2, $3, $4, $5, $6)',
                         [transactions[0].user_id, 'btc', amountUsd, btcAmountBought, btcPriceUsd, metadata.localCurrencyCode]
+                    );
+                } else if (planId === 'AAPL' || planId === 'TSLA') {
+                    // Register user's stock purchase
+                    await db.query(
+                        'INSERT INTO user_plans (user_id, plan_name, amount_invested, status) VALUES ($1, $2, $3, $4)',
+                        [transactions[0].user_id, PLANS[planId]?.name || planId, transactions[0].amount, 'active']
                     );
                 } else {
                     // Register user's purchased plan

@@ -10,14 +10,14 @@ exports.getUserPlans = async (req, res) => {
                 up.plan_name,
                 up.amount_invested,
                 up.status,
-                up.created_at as purchase_date
+                up.created_at as purchase_date,
+                COALESCE(sp.daily_percentage, 0) as daily_percentage,
+                COALESCE((SELECT SUM(amount) FROM daily_earnings WHERE user_plan_id = up.id), 0) as total_earned
             FROM user_plans up
+            LEFT JOIN system_plans sp ON LOWER(up.plan_name) LIKE '%' || LOWER(sp.name) || '%'
             WHERE up.user_id = $1
             ORDER BY up.created_at DESC
         `, [userId]);
-
-        // Note: For now we return basic info, daily_earnings can be added later as a subquery or separate call
-        // to prevent complex joins that might fail if tables are empty.
 
         res.json({ success: true, plans: plans.rows });
     } catch (error) {
