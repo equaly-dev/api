@@ -14,7 +14,7 @@ exports.getUserPlans = async (req, res) => {
                 COALESCE(sp.daily_percentage, 0) as daily_percentage,
                 (
                     up.amount_invested * (COALESCE(sp.daily_percentage, 0) / 100) * 
-                    GREATEST(0, EXTRACT(DAY FROM (NOW() - up.created_at)))
+                    (EXTRACT(EPOCH FROM (NOW() - up.created_at)) / 86400.0)
                 ) as total_earned
             FROM user_plans up
             LEFT JOIN system_plans sp ON LOWER(up.plan_name) LIKE '%' || LOWER(sp.name) || '%'
